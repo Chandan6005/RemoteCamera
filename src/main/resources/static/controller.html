@@ -19,10 +19,19 @@
     <script>
       const socket = new SockJS("/ws");
       const stomp = Stomp.over(socket);
+      let lastImageCount = 0;
+
       stomp.connect({}, () => {
+        // Load initial images
+        loadImages();
+
+        // Subscribe to new image notifications
+        stomp.subscribe('/topic/newImage', () => {
+          loadImages();
+        });
+
         document.getElementById("captureBtn").onclick = () => {
           stomp.send("/app/capture", {});
-          setTimeout(loadImages, 2000);
         };
       });
 
@@ -30,19 +39,26 @@
         fetch("/images")
           .then((res) => res.json())
           .then((images) => {
+            // Only update if we have new images
+            if (images.length <= lastImageCount) {
+              return;
+            }
+            lastImageCount = images.length;
+
             const container = document.getElementById("imagesContainer");
             container.innerHTML = "";
             images.forEach((img) => {
               const imgElem = document.createElement("img");
-              imgElem.src = img.base64Data; // this holds the image path (e.g. /images/20251104_120000.jpg)
+              imgElem.src = img.base64Data;
               imgElem.title = img.timestamp;
               imgElem.style.maxWidth = "200px";
               imgElem.style.margin = "6px";
+              imgElem.style.border = "1px solid #ccc";
+              imgElem.style.borderRadius = "4px";
               container.appendChild(imgElem);
             });
           });
-      }
-      setInterval(loadImages, 1000);
+        }
     </script>
   </body>
 </html>
