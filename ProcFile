@@ -1,1 +1,1 @@
-web: java -jar target/remote-camera-0.0.1-SNAPSHOT.jar
+web: java -jar target/RemoteCamera-0.0.1-SNAPSHOT.jar
