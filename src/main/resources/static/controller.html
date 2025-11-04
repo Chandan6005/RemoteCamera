@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Controller</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+  </head>
+  <body>
+    <h2>Remote Controller</h2>
+    <button id="captureBtn">Capture</button>
+
+    <div id="gallery">
+      <h3>Captured Images</h3>
+      <div id="imagesContainer"></div>
+    </div>
+
+    <script>
+      const socket = new SockJS("/ws");
+      const stomp = Stomp.over(socket);
+      stomp.connect({}, () => {
+        document.getElementById("captureBtn").onclick = () => {
+          stomp.send("/app/capture", {});
+          setTimeout(loadImages, 2000);
+        };
+      });
+
+      function loadImages() {
+        fetch("/images")
+          .then((res) => res.json())
+          .then((images) => {
+            const container = document.getElementById("imagesContainer");
+            container.innerHTML = "";
+            images.forEach((img) => {
+              const imgElem = document.createElement("img");
+              imgElem.src = img.base64Data; // this holds the image path (e.g. /images/20251104_120000.jpg)
+              imgElem.title = img.timestamp;
+              imgElem.style.maxWidth = "200px";
+              imgElem.style.margin = "6px";
+              container.appendChild(imgElem);
+            });
+          });
+      }
+      setInterval(loadImages, 1000);
+    </script>
+  </body>
+</html>

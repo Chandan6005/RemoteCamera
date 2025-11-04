@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Camera</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+  </head>
+  <body>
+    <h2>Remote Camera</h2>
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display: none"></canvas>
+
+    <script>
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then(stream => video.srcObject = stream)
+        .catch((err) => alert("Camera access denied"));
+
+      const socket = new SockJS("/ws");
+      const stomp = Stomp.over(socket);
+      stomp.connect({}, () => {
+        stomp.subscribe("/topic/capture", () => takePhoto());
+      });
+
+      function takePhoto() {
+        const ctx = canvas.getContext("2d");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const imgData = canvas.toDataURL("image/jpeg");
+
+        fetch("/upload", {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: imgData,
+        });
+      }
+    </script>
+  </body>
+</html>
